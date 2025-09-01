@@ -36,52 +36,52 @@ jobs:
           echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
 
       - name: Install moodle-plugin-ci
-        run: moodle-plugin-ci install --db-host=127.0.0.1 --db-user postgres --db-pass postgres
+        run: ci/bin/moodle-plugin-ci install --plugin ./filter/mermaidsvg --db-host=127.0.0.1 --db-user postgres --db-pass postgres
         env:
           DB: pgsql
           MOODLE_BRANCH: MOODLE_500_STABLE
 
       - name: PHP Lint
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phplint
+        run: ci/bin/moodle-plugin-ci phplint
 
       - name: PHP Mess Detector
         continue-on-error: true
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpmd
+        run: ci/bin/moodle-plugin-ci phpmd
 
       - name: Moodle Code Checker
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpcs --max-warnings 0
+        run: ci/bin/moodle-plugin-ci phpcs --max-warnings 0
 
       - name: Moodle PHPDoc Checker
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpdoc --max-warnings 0
+        run: ci/bin/moodle-plugin-ci phpdoc --max-warnings 0
 
       - name: Validating
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci validate
+        run: ci/bin/moodle-plugin-ci validate
 
       - name: Check upgrade savepoints
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci savepoints
+        run: ci/bin/moodle-plugin-ci savepoints
 
       - name: Mustache Lint
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci mustache
+        run: ci/bin/moodle-plugin-ci mustache
 
       - name: Grunt
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci grunt --max-lint-warnings 0
+        run: ci/bin/moodle-plugin-ci grunt --max-lint-warnings 0
 
       - name: PHPUnit tests
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci phpunit --fail-on-warning
+        run: ci/bin/moodle-plugin-ci phpunit --fail-on-warning
 
       - name: Behat features
         id: behat
         if: ${{ !cancelled() }}
-        run: moodle-plugin-ci behat --profile chrome --scss-deprecations
+        run: ci/bin/moodle-plugin-ci behat --profile chrome --scss-deprecations
 
       - name: save-dumps (always)
         if: always()

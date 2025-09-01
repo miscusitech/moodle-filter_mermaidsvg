@@ -2,7 +2,7 @@ MOODLEDIR ?= ../moodle
 
 link:
 	@mkdir -p $(MOODLEDIR)/filter
-	@ln -snf $(PWD) $(MOODLEDIR)/filter/mermaidsvg
+	@ln -snf $(PWD)/filter/mermaidsvg $(MOODLEDIR)/filter/mermaidsvg
 	@echo "Linked into $(MOODLEDIR)/filter/mermaidsvg"
 
 unlink:

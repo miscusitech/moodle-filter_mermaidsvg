@@ -1,0 +1,4 @@
+plugin:
+  path: filter/mermaidsvg
+  type: filter
+  component: filter_mermaidsvg
