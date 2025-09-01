@@ -18,10 +18,9 @@
  * Legacy class alias for Moodle 4.5+ filter autoloading.
  *
  * @package    filter_mermaidsvg
+ * @copyright  2025 Miscusi Tech
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
 
 // The old, non-namespaced class name must alias to the new namespaced one.
 class_alias('filter_mermaidsvg\\text_filter', 'filter_mermaidsvg');
