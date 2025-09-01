@@ -116,10 +116,12 @@ class text_filter extends \moodle_text_filter {
      * @return string Clean Mermaid source code.
      */
     private function normalize_mermaid_code(string $raw): string {
-        $code = $raw;
+        // Defensive: ensure string to avoid deprecation warnings in preg_replace.
+        $code = (string)$raw;
 
-        // Normalize newlines early.
-        $code = preg_replace("/\r\n?|\u000B|\u000C|\u0085|\u2028|\u2029/", "\n", $code);
+        // Normalize newlines early (use PCRE2-compatible escapes).
+        // Matches: CRLF or CR, VT, FF, NEL, LS, PS.
+        $code = preg_replace("/\r\n?|\x0B|\x0C|\x{85}|\x{2028}|\x{2029}/u", "\n", $code);
 
         // Map HTML breaks and common block boundaries to newlines.
         $code = preg_replace('/<br\s*\/?\s*>/i', "\n", $code);

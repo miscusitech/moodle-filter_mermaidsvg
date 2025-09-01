@@ -43,13 +43,18 @@ function filter_mermaidsvg_pluginfile($course, $cm, $context, $filearea, $args, 
         return false;
     }
 
-    $fs = get_file_storage();
-    $itemid = 0;
-    $filepath = '/';
-    $filename = implode('/', $args);
-
-    if (!$file = $fs->get_file($context->id, 'filter_mermaidsvg', 'rendered', $itemid, $filepath, $filename)) {
+    if (empty($args)) {
         return false;
     }
+    $itemid  = (int)array_shift($args);           // es. 0
+    $filename = array_pop($args);                  // es. <hash>.svg|png
+    $filepath = $args ? '/'.implode('/', $args).'/' : '/';
+
+    $fs = get_file_storage();
+    $file = $fs->get_file($context->id, 'filter_mermaidsvg', 'rendered', $itemid, $filepath, $filename);
+    if (!$file || $file->is_directory()) {
+        return false;
+    }
+
     send_stored_file($file, 0, 0, false, $options);
 }
