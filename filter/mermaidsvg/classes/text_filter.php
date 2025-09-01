@@ -46,12 +46,12 @@ class text_filter extends \moodle_text_filter {
         $bt = "\x60"; // Backtick character to avoid literal usage in strings.
         $patterns = [
             '/'.$bt.$bt.$bt.'(?:mermaid|mmd)\s+([\s\S]*?)'.$bt.$bt.$bt.'/i',
-            '/\[mermaid\]([\s\S]*?)\[\/mermaid\]/i',
+            '/\[mermaid(?:[^\]]*)\]([\s\S]*?)\[\/mermaid\]/iu',
         ];
 
         foreach ($patterns as $pattern) {
             $text = preg_replace_callback($pattern, function ($m) {
-                $code = trim($m[1]);
+                $code = $this->normalize_mermaid_code($m[1]);
 
                 $kroki   = rtrim(\get_config('filter_mermaidsvg', 'krokiurl') ?? 'https://kroki.io', '/');
                 $format  = \get_config('filter_mermaidsvg', 'format') ?? 'svg';
@@ -103,6 +103,49 @@ class text_filter extends \moodle_text_filter {
         }
 
         return $text;
+    }
+
+    /**
+     * Normalize Mermaid code possibly wrapped in HTML produced by editors.
+     * - Convert common block tags and <br> to newlines
+     * - Strip all remaining tags
+     * - Decode HTML entities (&gt;, &amp;, &nbsp;)
+     * - Normalize whitespace and remove zero-width chars
+     *
+     * @param string $raw Raw HTML/text between [mermaid] tags or code fences.
+     * @return string Clean Mermaid source code.
+     */
+    private function normalize_mermaid_code(string $raw): string {
+        $code = $raw;
+
+        // Normalize newlines early.
+        $code = preg_replace("/\r\n?|\u000B|\u000C|\u0085|\u2028|\u2029/", "\n", $code);
+
+        // Map HTML breaks and common block boundaries to newlines.
+        $code = preg_replace('/<br\s*\/?\s*>/i', "\n", $code);
+        $code = preg_replace('/<\/(?:p|div|li|h[1-6]|tr|pre|code|section|article|blockquote|dd|dt|tbody|thead|tfoot)\s*>/i', "\n", $code);
+        $code = preg_replace('/<(?:p|div|li|h[1-6]|tr|pre|code|section|article|blockquote|dd|dt|tbody|thead|tfoot)(?:\s+[^>]*)?>/i', "\n", $code);
+
+        // Strip any remaining tags.
+        $code = strip_tags($code);
+
+        // Decode entities (>, <, &, quotes, nbsp, etc.).
+        $code = html_entity_decode($code, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Replace non-breaking spaces with regular spaces.
+        $code = str_replace(["\xC2\xA0", "\xA0"], ' ', $code);
+
+        // Remove zero-width and BOM characters.
+        $code = preg_replace('/[\x{200B}-\x{200D}\x{2060}\x{FEFF}]/u', '', $code);
+
+        // Collapse excessive blank lines but keep intentional paragraphs.
+        $code = preg_replace("/\n{3,}/", "\n\n", $code);
+
+        // Trim trailing spaces on each line and remove leading/trailing blank lines.
+        $lines = array_map(function ($l) { return rtrim($l); }, explode("\n", $code));
+        while ($lines && trim($lines[0]) === '') { array_shift($lines); }
+        while ($lines && trim(end($lines)) === '') { array_pop($lines); }
+
+        return implode("\n", $lines);
     }
 
     /**
