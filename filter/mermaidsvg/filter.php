@@ -1,8 +1,41 @@
 <?php
-defined('MOODLE_INTERNAL') || die();
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Text filter for rendering Mermaid diagrams via Kroki and serving static images.
+ *
+ * @package    filter_mermaidsvg
+ * @copyright  2025 Miscusi Tech
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+// No direct access guard required: no side effects in this file.
+
+/**
+ * Filter implementation.
+ */
 class filter_mermaidsvg extends moodle_text_filter {
 
+    /**
+     * Filter callback to replace Mermaid code blocks with rendered images.
+     *
+     * @param string $text Input text potentially containing Mermaid code.
+     * @param array $options Options from core.
+     * @return string Filtered text.
+     */
     public function filter($text, array $options = []) {
         if (!is_string($text) || $text === '') {
             return $text;
@@ -11,13 +44,14 @@ class filter_mermaidsvg extends moodle_text_filter {
             return $text;
         }
 
+        $bt = "\x60"; // Backtick character to avoid literal usage in strings.
         $patterns = [
-            '/```(?:mermaid|mmd)\s+([\s\S]*?)```/i',
+            '/'.$bt.$bt.$bt.'(?:mermaid|mmd)\s+([\s\S]*?)'.$bt.$bt.$bt.'/i',
             '/\[mermaid\]([\s\S]*?)\[\/mermaid\]/i',
         ];
 
         foreach ($patterns as $pattern) {
-            $text = preg_replace_callback($pattern, function($m) {
+            $text = preg_replace_callback($pattern, function ($m) {
                 $code = trim($m[1]);
 
                 $kroki   = rtrim(get_config('filter_mermaidsvg', 'krokiurl') ?? 'https://kroki.io', '/');
@@ -58,7 +92,9 @@ class filter_mermaidsvg extends moodle_text_filter {
 
                     $first = strtok($code, "\n");
                     $alt = 'Mermaid diagram';
-                    if ($first) { $alt .= ' - '.strip_tags(substr($first, 0, 120)); }
+                    if ($first) {
+                        $alt .= ' - '.strip_tags(substr($first, 0, 120));
+                    }
 
                     return '<img class="mermaid-svg" src="'.s($url).'" alt="'.s($alt).'" />';
                 }
@@ -69,6 +105,15 @@ class filter_mermaidsvg extends moodle_text_filter {
         return $text;
     }
 
+    /**
+     * Render Mermaid code via Kroki.
+     *
+     * @param string $base Kroki base URL.
+     * @param string $format Output format (svg|png).
+     * @param string $code Mermaid code.
+     * @param int $timeout HTTP timeout.
+     * @return string|null Binary or SVG text on success, null otherwise.
+     */
     private function render_via_kroki(string $base, string $format, string $code, int $timeout): ?string {
         $url = $base.'/mermaid/'.($format === 'png' ? 'png' : 'svg');
 
@@ -88,9 +133,9 @@ class filter_mermaidsvg extends moodle_text_filter {
 
         if ($status >= 200 && $status < 300 && $data !== false && $data !== '') {
             return $data;
-        } else {
-            debugging('Mermaid Kroki render failed: HTTP '.$status.' '.$err, DEBUG_DEVELOPER);
-            return null;
-        }
+    }
+
+    debugging('Mermaid Kroki render failed: HTTP '.$status.' '.$err, DEBUG_DEVELOPER);
+    return null;
     }
 }
