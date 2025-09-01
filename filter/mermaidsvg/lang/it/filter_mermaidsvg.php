@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 $string['filtername'] = 'Mermaid (render server-side via Kroki)';
 $string['format'] = 'Formato in uscita';
 $string['format_desc'] = 'Formato dell\'immagine renderizzata.';
