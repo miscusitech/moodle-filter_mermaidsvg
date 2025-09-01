@@ -1,0 +1,13 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node/Composer (if added later)
+node_modules/
+vendor/
+
+# IDE
+.vscode/
+.idea/
+
+composer.phar
