@@ -118,29 +118,44 @@ class text_filter extends \moodle_text_filter {
     private function normalize_mermaid_code(string $raw): string {
         // Defensive: ensure string to avoid deprecation warnings in preg_replace.
         $code = (string)$raw;
+        \debugging('normalize_mermaid_code input: "' . $code);
 
         // Normalize newlines early (use PCRE2-compatible escapes).
         // Matches: CRLF or CR, VT, FF, NEL, LS, PS.
         $code = preg_replace("/\r\n?|\x0B|\x0C|\x{85}|\x{2028}|\x{2029}/u", "\n", $code);
+        \debugging('normalize_mermaid_code step 1: "' . $code);
 
         // Map HTML breaks and common block boundaries to newlines.
         $code = preg_replace('/<br\s*\/?\s*>/i', "\n", $code);
         $code = preg_replace('/<\/(?:p|div|li|h[1-6]|tr|pre|code|section|article|blockquote|dd|dt|tbody|thead|tfoot)\s*>/i', "\n", $code);
         $code = preg_replace('/<(?:p|div|li|h[1-6]|tr|pre|code|section|article|blockquote|dd|dt|tbody|thead|tfoot)(?:\s+[^>]*)?>/i', "\n", $code);
+        \debugging('normalize_mermaid_code step 2: "' . $code);
 
         // Strip any remaining tags.
         $code = strip_tags($code);
+        \debugging('normalize_mermaid_code step 3: "' . $code);
 
-        // Decode entities (>, <, &, quotes, nbsp, etc.).
         $code = html_entity_decode($code, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        // Replace non-breaking spaces with regular spaces.
-        $code = str_replace(["\xC2\xA0", "\xA0"], ' ', $code);
+        \debugging('normalize_mermaid_code step 4.1: "'.$code.'"');
 
-        // Remove zero-width and BOM characters.
-        $code = preg_replace('/[\x{200B}-\x{200D}\x{2060}\x{FEFF}]/u', '', $code);
+        // Sostituisci SOLO gli NBSP veri (U+00A0, e affini) in modo Unicode-safe.
+        // NIENTE "\xA0" singolo byte: rompe l'UTF-8.
+        $code = preg_replace('/[\x{00A0}\x{202F}\x{2007}]+/u', ' ', $code);
+        \debugging('normalize_mermaid_code step 4.2: "'.$code.'"');
+
+        // Rimuovi caratteri zero-width / BOM. Gestisci errori di PCRE su UTF-8 malformato.
+        $tmp = preg_replace('/[\x{200B}\x{200C}\x{200D}\x{2060}\x{FEFF}]/u', '', $code);
+        if ($tmp === null) {
+            // Recupero: ripulisci byte invalidi e riprova.
+            $code = iconv('UTF-8', 'UTF-8//IGNORE', $code);
+            $tmp = preg_replace('/[\x{200B}\x{200C}\x{200D}\x{2060}\x{FEFF}]/u', '', $code);
+        }
+        $code = $tmp ?? $code;
+        \debugging('normalize_mermaid_code step 5: "'.$code.'"');
 
         // Collapse excessive blank lines but keep intentional paragraphs.
         $code = preg_replace("/\n{3,}/", "\n\n", $code);
+        \debugging('normalize_mermaid_code step 6: "' . $code);
 
         // Trim trailing spaces on each line and remove leading/trailing blank lines.
         $lines = array_map(function ($l) { return rtrim($l); }, explode("\n", $code));
