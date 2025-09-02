@@ -127,8 +127,10 @@ class text_filter extends \moodle_text_filter {
 
         // Map HTML breaks and common block boundaries to newlines.
         $code = preg_replace('/<br\s*\/?\s*>/i', "\n", $code);
-        $code = preg_replace('/<\/(?:p|div|li|h[1-6]|tr|pre|code|section|article|blockquote|dd|dt|tbody|thead|tfoot)\s*>/i', "\n", $code);
-        $code = preg_replace('/<(?:p|div|li|h[1-6]|tr|pre|code|section|article|blockquote|dd|dt|tbody|thead|tfoot)(?:\s+[^>]*)?>/i', "\n", $code);
+        $blocktags  = '(?:p|div|li|h[1-6]|tr|pre|code|section|article|';
+        $blocktags .= 'blockquote|dd|dt|tbody|thead|tfoot)';
+        $code = preg_replace('/<\/' . $blocktags . '\s*>/i', "\n", $code);
+        $code = preg_replace('/<' . $blocktags . '(?:\s+[^>]*)?>/i', "\n", $code);
         \debugging('normalize_mermaid_code step 2: "' . $code);
 
         // Strip any remaining tags.
@@ -158,9 +160,15 @@ class text_filter extends \moodle_text_filter {
         \debugging('normalize_mermaid_code step 6: "' . $code);
 
         // Trim trailing spaces on each line and remove leading/trailing blank lines.
-        $lines = array_map(function ($l) { return rtrim($l); }, explode("\n", $code));
-        while ($lines && trim($lines[0]) === '') { array_shift($lines); }
-        while ($lines && trim(end($lines)) === '') { array_pop($lines); }
+        $lines = array_map(function ($l) {
+            return rtrim($l);
+        }, explode("\n", $code));
+        while ($lines && trim($lines[0]) === '') {
+            array_shift($lines);
+        }
+        while ($lines && trim(end($lines)) === '') {
+            array_pop($lines);
+        }
 
         return implode("\n", $lines);
     }

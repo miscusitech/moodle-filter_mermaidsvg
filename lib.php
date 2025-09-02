@@ -46,8 +46,8 @@ function filter_mermaidsvg_pluginfile($course, $cm, $context, $filearea, $args, 
     if (empty($args)) {
         return false;
     }
-    $itemid  = (int)array_shift($args);           // es. 0
-    $filename = array_pop($args);                  // es. <hash>.svg|png
+    $itemid  = (int)array_shift($args);           // Example: 0.
+    $filename = array_pop($args);                  // Example: <hash>.svg|png.
     $filepath = $args ? '/'.implode('/', $args).'/' : '/';
 
     $fs = get_file_storage();
